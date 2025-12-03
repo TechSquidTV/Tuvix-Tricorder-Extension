@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+*.zip
+.pnpm-store/
+
+# Web-ext artifacts
+web-ext-artifacts/
+chrome-profile/
+.web-extension-id

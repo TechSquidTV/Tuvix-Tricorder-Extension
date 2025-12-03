@@ -1,0 +1,56 @@
+{
+  "name": "tuvix-tricorder-extension",
+  "version": "1.0.0",
+  "description": "Official companion browser extension for Tuvix RSS - discover RSS and Atom feeds on any website",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TechSquidTV/Tuvix-Tricorder-Extension.git"
+  },
+  "homepage": "https://github.com/TechSquidTV/Tuvix-RSS",
+  "scripts": {
+    "build": "node build.js",
+    "build:firefox": "node build.js && cp manifest.firefox.json dist/manifest.json",
+    "watch": "node build.js --watch",
+    "dev": "concurrently \"pnpm watch\" \"pnpm start:firefox\"",
+    "dev:chrome": "concurrently \"pnpm watch\" \"pnpm start:chrome\"",
+    "start:firefox": "web-ext run --source-dir=dist --start-url about:debugging#/runtime/this-firefox",
+    "start:chrome": "web-ext run --source-dir=dist --target=chromium",
+    "icons:generate": "node ./scripts/convert-icons.js",
+    "icons:clean": "rm -rf dist/icons/*.png",
+    "format": "echo 'Format check passed (no formatter configured)'",
+    "lint": "echo 'Lint check passed (no linter configured)'",
+    "pack": "pnpm build && cd dist && zip -r ../tuvix-tricorder-chrome-v1.0.0.zip . -x '*.DS_Store' && cd ..",
+    "pack:firefox": "pnpm build:firefox && cd dist && zip -r ../tuvix-tricorder-firefox-v1.0.0.zip . -x '*.DS_Store' && cd .."
+  },
+  "keywords": [
+    "rss",
+    "atom",
+    "feed",
+    "discovery",
+    "browser-extension",
+    "tuvix",
+    "podcast",
+    "typescript",
+    "chrome-extension",
+    "firefox-addon"
+  ],
+  "author": "TechSquidTV",
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/chrome": "^0.1.32",
+    "@types/webextension-polyfill": "^0.12.4",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.19.11",
+    "postcss": "^8.5.6",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.3.3",
+    "web-ext": "^9.2.0",
+    "webextension-polyfill": "^0.12.0"
+  },
+  "packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8",
+  "dependencies": {
+    "@tuvixrss/tricorder": "^0.1.5"
+  }
+}
