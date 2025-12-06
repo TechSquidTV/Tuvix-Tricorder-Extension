@@ -11,25 +11,25 @@ const ICONS: Record<IconState, Record<number, string>> = {
   disabled: {
     16: 'icons/tuvix-disabled-16.png',
     48: 'icons/tuvix-disabled-48.png',
-    128: 'icons/tuvix-disabled-128.png'
+    128: 'icons/tuvix-disabled-128.png',
   },
   enabled: {
     16: 'icons/tuvix-enabled-16.png',
     48: 'icons/tuvix-enabled-48.png',
-    128: 'icons/tuvix-enabled-128.png'
+    128: 'icons/tuvix-enabled-128.png',
   },
   discovered: {
     16: 'icons/tuvix-discovered-16.png',
     48: 'icons/tuvix-discovered-48.png',
-    128: 'icons/tuvix-discovered-128.png'
-  }
+    128: 'icons/tuvix-discovered-128.png',
+  },
 };
 
 async function setIcon(tabId: number, state: IconState): Promise<void> {
   try {
     await browser.action.setIcon({
       tabId,
-      path: ICONS[state]
+      path: ICONS[state],
     });
   } catch (error) {
     console.error('Failed to set icon:', error);
@@ -41,7 +41,7 @@ async function discoverFeedsWithTimeout(url: string): Promise<DiscoveredFeed[]> 
     discoverFeeds(url),
     new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Discovery timeout')), DISCOVERY_TIMEOUT)
-    )
+    ),
   ]);
 }
 
@@ -100,14 +100,17 @@ browser.runtime.onMessage.addListener((request: any, sender: browser.Runtime.Mes
           success: false,
           error: discoveryError.message,
           errorType: discoveryError.type,
-          suggestion: discoveryError.suggestion
+          suggestion: discoveryError.suggestion,
         };
       });
   }
 
   if (request.action === 'checkCache' && request.url) {
-    return getCachedFeeds(request.url)
-      .then((feeds) => ({ success: true, cached: feeds !== null, feeds }));
+    return getCachedFeeds(request.url).then((feeds) => ({
+      success: true,
+      cached: feeds !== null,
+      feeds,
+    }));
   }
 });
 
@@ -168,7 +171,11 @@ browser.tabs.onActivated.addListener(async (activeInfo) => {
 
 browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   try {
-    if (changeInfo.status === 'complete' && tab.url && (tab.url.startsWith('http://') || tab.url.startsWith('https://'))) {
+    if (
+      changeInfo.status === 'complete' &&
+      tab.url &&
+      (tab.url.startsWith('http://') || tab.url.startsWith('https://'))
+    ) {
       await handleTabNavigation(tabId, tab.url);
     }
   } catch (error) {

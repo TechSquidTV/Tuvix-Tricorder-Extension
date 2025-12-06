@@ -7,7 +7,7 @@ export interface Config {
 
 const DEFAULT_CONFIG: Config = {
   baseUrl: 'https://feed.tuvix.app',
-  cacheTtlDays: 90
+  cacheTtlDays: 90,
 };
 
 const CONFIG_KEY = 'tuvix_config';
@@ -17,7 +17,7 @@ export async function getConfig(): Promise<Config> {
     const result = await browser.storage.local.get(CONFIG_KEY);
     return {
       ...DEFAULT_CONFIG,
-      ...(result[CONFIG_KEY] || {})
+      ...(result[CONFIG_KEY] || {}),
     };
   } catch (error) {
     console.error('Error loading config:', error);

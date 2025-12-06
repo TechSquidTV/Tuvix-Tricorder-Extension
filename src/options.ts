@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       await setConfig({
         baseUrl: validation.normalized!,
-        cacheTtlDays: parseInt(cacheTtlSelect.value, 10)
+        cacheTtlDays: parseInt(cacheTtlSelect.value, 10),
       });
 
       // Update current URL display

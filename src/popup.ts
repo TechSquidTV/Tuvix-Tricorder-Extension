@@ -2,6 +2,7 @@ import browser from 'webextension-polyfill';
 import type { DiscoveredFeed } from '@tuvixrss/tricorder';
 import { getBaseUrl } from './config';
 import { createDiscoveryError, type ErrorType } from './types';
+import { ToggleSwitch } from './components/ToggleSwitch';
 
 interface DiscoveryResponse {
   success: boolean;
@@ -31,7 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let isFromCache = false;
 
   function setStatus(state: 'none' | 'searching' | 'found', text: string) {
-    statusIcon.classList.remove('bg-muted-foreground', 'bg-yellow-500', 'bg-green-500', 'animate-pulse-subtle');
+    statusIcon.classList.remove(
+      'bg-muted-foreground',
+      'bg-yellow-500',
+      'bg-green-500',
+      'animate-pulse-subtle'
+    );
 
     // Add visual shape indicators (using Unicode symbols)
     let icon = '●'; // default circle
@@ -75,15 +81,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function groupFeedsByUrl(feeds: DiscoveredFeed[]): FeedGroup[] {
     const feedMap = new Map<string, FeedGroup>();
 
-    feeds.forEach(feed => {
+    feeds.forEach((feed) => {
       // Normalize URL by removing format-specific parts
       const normalizedUrl = feed.url
         .toLowerCase()
-        .replace(/\/+$/, '')  // Remove trailing slashes
-        .replace(/\/(atom|rss)\/?$/i, '')  // Remove /atom/ or /rss/ at end
-        .replace(/\.(rss|atom|xml)$/i, '')  // Remove file extensions
-        .replace(/\/(feed)\/?$/i, '/feed')  // Normalize to /feed
-        .replace(/[?&](format|type)=(rss|atom)/gi, '');  // Remove format query params
+        .replace(/\/+$/, '') // Remove trailing slashes
+        .replace(/\/(atom|rss)\/?$/i, '') // Remove /atom/ or /rss/ at end
+        .replace(/\.(rss|atom|xml)$/i, '') // Remove file extensions
+        .replace(/\/(feed)\/?$/i, '/feed') // Normalize to /feed
+        .replace(/[?&](format|type)=(rss|atom)/gi, ''); // Remove format query params
 
       let group = feedMap.get(normalizedUrl);
       if (!group) {
@@ -123,39 +129,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add help text when multiple feed groups are found
     if (feedGroups.length > 1) {
       const helpContainer = document.createElement('div');
-      helpContainer.className = 'px-2 py-1 mb-1 text-[10px] text-muted-foreground bg-accent/30 rounded';
+      helpContainer.className =
+        'px-2 py-1 mb-1 text-[10px] text-muted-foreground bg-accent/30 rounded';
       helpContainer.innerHTML = `
         <span>Select a feed to follow.</span>
       `;
       feedsList.appendChild(helpContainer);
     }
 
-    feedGroups.forEach(group => {
+    feedGroups.forEach((group) => {
       // Default to Atom if available, otherwise RSS
       const hasBoth = group.atom && group.rss;
       let activeFeed = group.atom || group.rss;
       if (!activeFeed) return;
 
       const feedItem = document.createElement('div');
-      feedItem.className = 'group rounded-md border bg-card p-2 shadow-sm transition-colors hover:bg-accent';
+      feedItem.className =
+        'group rounded-md border bg-card p-2 shadow-sm transition-colors hover:bg-accent';
 
       let subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(activeFeed.url)}`;
 
-      // Build toggle HTML if both formats available, otherwise show type badge
-      const badgeClass = "inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/20";
-
-      const formatDisplay = hasBoth ? `
-        <div class="flex items-center gap-1">
-          <span class="${badgeClass}">RSS</span>
-          <label class="feed-format-switch">
-            <input type="checkbox" class="format-toggle" checked aria-label="Toggle between RSS and Atom formats">
-            <span class="feed-format-slider"></span>
-          </label>
-          <span class="${badgeClass}">Atom</span>
-        </div>
-      ` : `
-        <span class="${badgeClass}">${escapeHtml(activeFeed.type)}</span>
-      `;
+      // Build feed item structure
+      const badgeClass =
+        'inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/20';
 
       feedItem.innerHTML = `
         <div class="flex items-start gap-2">
@@ -164,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="text-[10px] text-muted-foreground truncate feed-url">${escapeHtml(activeFeed.url)}</div>
           </div>
           <div class="flex items-center gap-1 shrink-0">
-            ${formatDisplay}
+            <div class="format-display"></div>
             <button
               class="subscribe-btn inline-flex items-center justify-center rounded bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               aria-label="Subscribe to ${escapeHtml(activeFeed.title)} feed"
@@ -177,27 +173,40 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
 
-      // Add toggle handler if both formats available
-      if (hasBoth && group.atom && group.rss) {
-        const toggle = feedItem.querySelector('.format-toggle') as HTMLInputElement;
-        const titleEl = feedItem.querySelector('.feed-title') as HTMLDivElement;
-        const urlEl = feedItem.querySelector('.feed-url') as HTMLDivElement;
-        const subscribeBtn = feedItem.querySelector('.subscribe-btn') as HTMLButtonElement;
+      const formatDisplayEl = feedItem.querySelector('.format-display') as HTMLDivElement;
+      const titleEl = feedItem.querySelector('.feed-title') as HTMLDivElement;
+      const urlEl = feedItem.querySelector('.feed-url') as HTMLDivElement;
+      const subscribeBtn = feedItem.querySelector('.subscribe-btn') as HTMLButtonElement;
 
-        if (toggle) {
-          toggle.addEventListener('change', () => {
-            activeFeed = toggle.checked ? group.atom! : group.rss!;
+      // Add toggle or badge based on available formats
+      if (hasBoth && group.atom && group.rss) {
+        const toggleSwitch = new ToggleSwitch({
+          checked: true, // Default to Atom (right side)
+          ariaLabel: 'Toggle between RSS and Atom formats',
+          leftLabel: 'RSS',
+          rightLabel: 'Atom',
+          leftLabelClass: badgeClass,
+          rightLabelClass: badgeClass,
+          onChange: (checked) => {
+            activeFeed = checked ? group.atom! : group.rss!;
             subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(activeFeed.url)}`;
 
             titleEl.textContent = activeFeed.title;
             urlEl.textContent = activeFeed.url;
             subscribeBtn.setAttribute('data-feed-url', subscribeUrl);
-          });
-        }
+          },
+        });
+
+        formatDisplayEl.appendChild(toggleSwitch.element);
+      } else {
+        // Show simple badge if only one format
+        const badge = document.createElement('span');
+        badge.className = badgeClass;
+        badge.textContent = activeFeed.type;
+        formatDisplayEl.appendChild(badge);
       }
 
       // Add click handler for subscribe button
-      const subscribeBtn = feedItem.querySelector('.subscribe-btn') as HTMLButtonElement;
       if (subscribeBtn) {
         subscribeBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -248,11 +257,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       currentUrl = tab.url;
 
-      const response = await browser.runtime.sendMessage({
+      const response = (await browser.runtime.sendMessage({
         action: 'discoverFeeds',
         url: tab.url,
-        forceRefresh
-      }) as DiscoveryResponse;
+        forceRefresh,
+      })) as DiscoveryResponse;
 
       if (!response.success) {
         const err: any = new Error(response.error || 'Discovery failed');
@@ -267,7 +276,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (feeds.length > 0) {
         const cacheIndicator = isFromCache ? ' (cached)' : '';
-        setStatus('found', `Found ${feeds.length} feed${feeds.length === 1 ? '' : 's'}${cacheIndicator}`);
+        setStatus(
+          'found',
+          `Found ${feeds.length} feed${feeds.length === 1 ? '' : 's'}${cacheIndicator}`
+        );
       } else {
         setStatus('none', 'No feeds found');
       }
@@ -317,7 +329,12 @@ document.addEventListener('DOMContentLoaded', () => {
       performDiscovery(false);
     }
     // 'r' key - refresh if button is visible
-    if (e.key === 'r' && refreshBtn && !refreshBtn.classList.contains('hidden') && !refreshBtn.disabled) {
+    if (
+      e.key === 'r' &&
+      refreshBtn &&
+      !refreshBtn.classList.contains('hidden') &&
+      !refreshBtn.disabled
+    ) {
       e.preventDefault();
       performDiscovery(true);
     }
@@ -331,18 +348,21 @@ document.addEventListener('DOMContentLoaded', () => {
         currentUrl = tab.url;
 
         // Wait a brief moment for background script to complete if it's still discovering
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-        const response = await browser.runtime.sendMessage({
+        const response = (await browser.runtime.sendMessage({
           action: 'checkCache',
-          url: tab.url
-        }) as DiscoveryResponse;
+          url: tab.url,
+        })) as DiscoveryResponse;
 
         if (response.success && response.cached && response.feeds) {
           isFromCache = true;
           const feeds = response.feeds;
           if (feeds.length > 0) {
-            setStatus('found', `Found ${feeds.length} feed${feeds.length === 1 ? '' : 's'} (cached)`);
+            setStatus(
+              'found',
+              `Found ${feeds.length} feed${feeds.length === 1 ? '' : 's'} (cached)`
+            );
             renderFeeds(feeds);
             if (refreshBtn) {
               refreshBtn.classList.remove('hidden');
@@ -360,10 +380,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const maxAttempts = 30; // 30 seconds max
           const pollInterval = setInterval(async () => {
             attempts++;
-            const pollResponse = await browser.runtime.sendMessage({
+            const pollResponse = (await browser.runtime.sendMessage({
               action: 'checkCache',
-              url: tab.url
-            }) as DiscoveryResponse;
+              url: tab.url,
+            })) as DiscoveryResponse;
 
             if (pollResponse.success && pollResponse.cached) {
               clearInterval(pollInterval);
@@ -371,7 +391,10 @@ document.addEventListener('DOMContentLoaded', () => {
               const feeds = pollResponse.feeds || [];
 
               if (feeds.length > 0) {
-                setStatus('found', `Found ${feeds.length} feed${feeds.length === 1 ? '' : 's'} (cached)`);
+                setStatus(
+                  'found',
+                  `Found ${feeds.length} feed${feeds.length === 1 ? '' : 's'} (cached)`
+                );
                 renderFeeds(feeds);
                 if (refreshBtn) {
                   refreshBtn.classList.remove('hidden');

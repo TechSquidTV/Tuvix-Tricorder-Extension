@@ -77,7 +77,7 @@ export async function setCachedFeeds(
       url: normalizedUrl,
       feeds,
       timestamp: Date.now(),
-      ttl: ttl ?? await getCacheTtl()
+      ttl: ttl ?? (await getCacheTtl()),
     };
 
     await browser.storage.local.set({ [CACHE_KEY]: cache });
@@ -126,19 +126,19 @@ export async function getCacheStats(): Promise<{
     const cache: CacheStorage = (result[CACHE_KEY] ?? {}) as CacheStorage;
 
     const entries = Object.values(cache);
-    const timestamps = entries.map(e => e.timestamp);
+    const timestamps = entries.map((e) => e.timestamp);
 
     return {
       totalEntries: entries.length,
       oldestEntry: timestamps.length > 0 ? Math.min(...timestamps) : null,
-      newestEntry: timestamps.length > 0 ? Math.max(...timestamps) : null
+      newestEntry: timestamps.length > 0 ? Math.max(...timestamps) : null,
     };
   } catch (error) {
     console.error('Error getting cache stats:', error);
     return {
       totalEntries: 0,
       oldestEntry: null,
-      newestEntry: null
+      newestEntry: null,
     };
   }
 }
