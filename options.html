@@ -61,6 +61,32 @@
       </div>
     </div>
 
+    <!-- Subscribe Action Section -->
+    <div class="space-y-2">
+      <div>
+        <label for="subscribeAction" class="block text-sm font-medium mb-1">
+          Subscribe Button Behavior
+        </label>
+        <p class="text-xs text-muted-foreground mb-2">
+          Choose how the subscribe button should handle feed subscriptions.
+        </p>
+      </div>
+
+      <select
+        id="subscribeAction"
+        class="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        <option value="tuvix">Tuvix Subscribe (default)</option>
+        <option value="feed-reader">Open with system feed reader</option>
+        <option value="raw-url">Open raw feed URL</option>
+      </select>
+
+      <!-- Context-aware help text -->
+      <div id="subscribeActionHelp" class="rounded-md border bg-muted/50 p-2 text-xs text-muted-foreground">
+        <span id="subscribeActionHelpText"></span>
+      </div>
+    </div>
+
     <!-- Cache Settings Section -->
     <div class="space-y-2">
       <div>
@@ -111,7 +137,7 @@
     <!-- Error Alert -->
     <div id="errorAlert" role="alert" aria-live="assertive" class="hidden rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
       <div class="flex items-start gap-2">
-        <svg class="h-4 w-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="h-4 w-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span id="errorMessage"></span>

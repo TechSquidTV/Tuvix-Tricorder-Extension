@@ -1,6 +1,5 @@
-import browser from 'webextension-polyfill';
-import { getConfig, setConfig } from './config';
 import { clearCache, getCacheStats } from './cache';
+import { getConfig, setConfig, type SubscribeAction } from './config';
 
 const DEFAULT_BASE_URL = 'https://feed.tuvix.app';
 
@@ -13,6 +12,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const successMessage = document.getElementById('successMessage') as HTMLSpanElement;
   const errorAlert = document.getElementById('errorAlert') as HTMLDivElement;
   const errorMessage = document.getElementById('errorMessage') as HTMLSpanElement;
+  const subscribeActionSelect = document.getElementById('subscribeAction') as HTMLSelectElement;
+  const subscribeActionHelpText = document.getElementById(
+    'subscribeActionHelpText'
+  ) as HTMLSpanElement;
   const cacheTtlSelect = document.getElementById('cacheTtl') as HTMLSelectElement;
   const clearCacheBtn = document.getElementById('clearCacheBtn') as HTMLButtonElement;
   const cacheStatsDiv = document.getElementById('cacheStats') as HTMLDivElement;
@@ -20,6 +23,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!baseUrlInput || !saveBtn || !resetBtn || !currentUrlSpan || !successAlert || !errorAlert) {
     console.error('Required elements not found');
     return;
+  }
+
+  // Update subscribe action help text based on selection
+  function updateSubscribeActionHelp() {
+    const action = subscribeActionSelect.value;
+    let helpText = '';
+
+    switch (action) {
+      case 'tuvix':
+        helpText = 'Opens feeds in your Tuvix instance for subscribing and reading.';
+        break;
+      case 'feed-reader':
+        helpText =
+          'Requires a feed reader app installed on your system. You can install the Tuvix app (or other feed readers) and subscribe this way.';
+        break;
+      case 'raw-url':
+        helpText = 'Opens the raw feed XML directly in your browser.';
+        break;
+    }
+
+    subscribeActionHelpText.textContent = helpText;
   }
 
   // Update cache statistics display
@@ -46,6 +70,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const config = await getConfig();
       baseUrlInput.value = config.baseUrl;
       currentUrlSpan.textContent = config.baseUrl;
+
+      // Load subscribe action
+      if (config.subscribeAction) {
+        subscribeActionSelect.value = config.subscribeAction;
+      }
+
+      // Update help text for current selection
+      updateSubscribeActionHelp();
 
       // Load cache TTL
       if (config.cacheTtlDays) {
@@ -94,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       return { valid: true, normalized };
-    } catch (error) {
+    } catch {
       return { valid: false, error: 'Invalid URL format' };
     }
   }
@@ -150,16 +182,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
 
+      const normalizedUrl = validation.normalized || '';
+
       await setConfig({
-        baseUrl: validation.normalized!,
+        baseUrl: normalizedUrl,
+        subscribeAction: subscribeActionSelect.value as SubscribeAction,
         cacheTtlDays: parseInt(cacheTtlSelect.value, 10),
       });
 
       // Update current URL display
-      currentUrlSpan.textContent = validation.normalized!;
+      currentUrlSpan.textContent = normalizedUrl;
 
       showSuccess('Settings saved successfully!');
-      baseUrlInput.value = validation.normalized!;
+      baseUrlInput.value = normalizedUrl;
     } catch (error) {
       showError('Failed to save settings. Please try again.');
       console.error('Error saving config:', error);
@@ -195,6 +230,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Event listeners
   saveBtn.addEventListener('click', saveSettings);
   resetBtn.addEventListener('click', resetToDefault);
+
+  // Update help text when subscribe action changes
+  subscribeActionSelect.addEventListener('change', updateSubscribeActionHelp);
 
   // Clear cache button handler
   clearCacheBtn.addEventListener('click', async () => {
