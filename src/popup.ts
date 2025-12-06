@@ -6,6 +6,7 @@ interface DiscoveryResponse {
   success: boolean;
   feeds?: DiscoveredFeed[];
   fromCache?: boolean;
+  cached?: boolean;
   error?: string;
 }
 
@@ -63,6 +64,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const baseUrl = await getBaseUrl();
+
+    // Add help text when multiple feeds are found
+    if (feeds.length > 1) {
+      const helpContainer = document.createElement('div');
+      helpContainer.className = 'px-2 py-1 mb-1 text-[10px] text-muted-foreground bg-accent/30 rounded';
+      helpContainer.innerHTML = `
+        <span>Select a feed to follow.</span>
+      `;
+      feedsList.appendChild(helpContainer);
+    }
 
     feeds.forEach(feed => {
       const feedItem = document.createElement('div');
@@ -218,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await browser.runtime.sendMessage({
           action: 'checkCache',
           url: tab.url
-        });
+        }) as DiscoveryResponse;
 
         if (response.success && response.cached && response.feeds) {
           isFromCache = true;
@@ -245,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const pollResponse = await browser.runtime.sendMessage({
               action: 'checkCache',
               url: tab.url
-            });
+            }) as DiscoveryResponse;
 
             if (pollResponse.success && pollResponse.cached) {
               clearInterval(pollInterval);
