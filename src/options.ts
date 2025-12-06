@@ -1,5 +1,6 @@
 import { clearCache, getCacheStats } from './cache';
 import { getConfig, setConfig, type SubscribeAction } from './config';
+import { validateUrl } from './utils/urlValidation';
 
 const DEFAULT_BASE_URL = 'https://feed.tuvix.app';
 
@@ -100,45 +101,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       showError('Failed to load settings');
       console.error('Error loading config:', error);
-    }
-  }
-
-  // Validate URL format
-  function validateUrl(urlString: string): { valid: boolean; error?: string; normalized?: string } {
-    if (!urlString || urlString.trim() === '') {
-      return { valid: false, error: 'URL cannot be empty' };
-    }
-
-    const trimmed = urlString.trim();
-
-    // Check if it has a protocol
-    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-      return { valid: false, error: 'URL must start with http:// or https://' };
-    }
-
-    // Try to parse the URL
-    try {
-      const url = new URL(trimmed);
-
-      // Remove trailing slashes
-      let normalized = url.origin + url.pathname;
-      if (normalized.endsWith('/')) {
-        normalized = normalized.slice(0, -1);
-      }
-
-      // Add back search params if any
-      if (url.search) {
-        normalized += url.search;
-      }
-
-      // Validate hostname
-      if (!url.hostname || url.hostname === '') {
-        return { valid: false, error: 'Invalid hostname' };
-      }
-
-      return { valid: true, normalized };
-    } catch {
-      return { valid: false, error: 'Invalid URL format' };
     }
   }
 
