@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill';
 import type { DiscoveredFeed } from '@tuvixrss/tricorder';
-import { getBaseUrl } from './config';
+import { getBaseUrl, getConfig } from './config';
 import { createDiscoveryError, type ErrorType } from './types';
 import { ToggleSwitch } from './components/ToggleSwitch';
 
@@ -116,7 +116,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Group feeds by normalized URL to detect duplicates
     const feedGroups = groupFeedsByUrl(feeds);
 
-    const baseUrl = await getBaseUrl();
+    const config = await getConfig();
+    const baseUrl = config.baseUrl;
+    const subscribeAction = config.subscribeAction || 'tuvix';
 
     // Add help text when multiple feed groups are found
     if (feedGroups.length > 1) {
@@ -139,7 +141,17 @@ document.addEventListener('DOMContentLoaded', () => {
       feedItem.className =
         'group rounded-md border bg-card p-2 shadow-sm transition-colors hover:bg-accent';
 
-      let subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(activeFeed.url)}`;
+      // Determine subscribe URL based on action
+      let subscribeUrl: string;
+      if (subscribeAction === 'tuvix') {
+        subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(activeFeed.url)}`;
+      } else if (subscribeAction === 'feed-reader') {
+        // Replace http(s):// with feed:// for feed reader protocol
+        subscribeUrl = activeFeed.url.replace(/^https?:\/\//, 'feed://');
+      } else {
+        // raw-url
+        subscribeUrl = activeFeed.url;
+      }
 
       // Build feed item structure
       const badgeClass =
@@ -181,7 +193,17 @@ document.addEventListener('DOMContentLoaded', () => {
           rightLabelClass: badgeClass,
           onChange: (checked) => {
             activeFeed = checked ? group.atom! : group.rss!;
-            subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(activeFeed.url)}`;
+
+            // Update subscribe URL based on action
+            if (subscribeAction === 'tuvix') {
+              subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(activeFeed.url)}`;
+            } else if (subscribeAction === 'feed-reader') {
+              // Replace http(s):// with feed:// for feed reader protocol
+              subscribeUrl = activeFeed.url.replace(/^https?:\/\//, 'feed://');
+            } else {
+              // raw-url
+              subscribeUrl = activeFeed.url;
+            }
 
             titleEl.textContent = activeFeed.title;
             urlEl.textContent = activeFeed.url;
