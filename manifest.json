@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tuvix Tricorder",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Discover RSS and Atom feeds on any website. Official companion extension for Tuvix RSS - a modern, self-hostable feed aggregator.",
   "icons": {
     "16": "icons/tuvix-disabled-16.png",
@@ -22,7 +22,6 @@
   },
   "permissions": [
     "activeTab",
-    "scripting",
     "storage"
   ],
   "host_permissions": [
