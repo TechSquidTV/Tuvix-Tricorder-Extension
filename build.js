@@ -28,6 +28,12 @@ const buildConfigs = [
     outfile: 'dist/background.js',
     format: 'esm',
   },
+  {
+    ...sharedConfig,
+    entryPoints: ['src/options.ts'],
+    outfile: 'dist/options.js',
+    format: 'iife',
+  },
 ];
 
 async function buildCSS() {
@@ -53,6 +59,7 @@ async function copyStaticFiles() {
   const filesToCopy = [
     { from: 'manifest.json', to: 'dist/manifest.json' },
     { from: 'popup.html', to: 'dist/popup.html' },
+    { from: 'options.html', to: 'dist/options.html' },
   ];
 
   const distDir = path.join(__dirname, 'dist');
