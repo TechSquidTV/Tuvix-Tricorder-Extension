@@ -39,22 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
       'animate-pulse-subtle'
     );
 
-    // Add visual shape indicators (using Unicode symbols)
-    let icon = '●'; // default circle
-
     if (state === 'searching') {
       statusIcon.classList.add('bg-yellow-500', 'animate-pulse-subtle');
-      icon = '◐'; // half-filled circle for "in progress"
     } else if (state === 'found') {
       statusIcon.classList.add('bg-green-500');
-      icon = '✓'; // checkmark for success
     } else {
       statusIcon.classList.add('bg-muted-foreground');
-      icon = '○'; // empty circle for idle
     }
 
-    statusIcon.textContent = icon;
-    statusIcon.setAttribute('aria-hidden', 'true'); // Icon is decorative
     statusText.textContent = text;
   }
 
