@@ -50,6 +50,42 @@ document.addEventListener('DOMContentLoaded', () => {
     errorEl.classList.add('hidden');
   }
 
+  interface FeedGroup {
+    atom?: DiscoveredFeed;
+    rss?: DiscoveredFeed;
+    normalizedUrl: string;
+  }
+
+  function groupFeedsByUrl(feeds: DiscoveredFeed[]): FeedGroup[] {
+    const feedMap = new Map<string, FeedGroup>();
+
+    feeds.forEach(feed => {
+      // Normalize URL by removing format-specific parts
+      const normalizedUrl = feed.url
+        .toLowerCase()
+        .replace(/\/+$/, '')  // Remove trailing slashes
+        .replace(/\/(atom|rss)\/?$/i, '')  // Remove /atom/ or /rss/ at end
+        .replace(/\.(rss|atom|xml)$/i, '')  // Remove file extensions
+        .replace(/\/(feed)\/?$/i, '/feed')  // Normalize to /feed
+        .replace(/[?&](format|type)=(rss|atom)/gi, '');  // Remove format query params
+
+      let group = feedMap.get(normalizedUrl);
+      if (!group) {
+        group = { normalizedUrl };
+        feedMap.set(normalizedUrl, group);
+      }
+
+      const feedType = feed.type.toLowerCase();
+      if (feedType === 'atom') {
+        group.atom = feed;
+      } else if (feedType === 'rss') {
+        group.rss = feed;
+      }
+    });
+
+    return Array.from(feedMap.values());
+  }
+
   async function renderFeeds(feeds: DiscoveredFeed[]) {
     feedsList.innerHTML = '';
 
@@ -63,10 +99,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Group feeds by normalized URL to detect duplicates
+    const feedGroups = groupFeedsByUrl(feeds);
+
     const baseUrl = await getBaseUrl();
 
-    // Add help text when multiple feeds are found
-    if (feeds.length > 1) {
+    // Add help text when multiple feed groups are found
+    if (feedGroups.length > 1) {
       const helpContainer = document.createElement('div');
       helpContainer.className = 'px-2 py-1 mb-1 text-[10px] text-muted-foreground bg-accent/30 rounded';
       helpContainer.innerHTML = `
@@ -75,20 +114,41 @@ document.addEventListener('DOMContentLoaded', () => {
       feedsList.appendChild(helpContainer);
     }
 
-    feeds.forEach(feed => {
+    feedGroups.forEach(group => {
+      // Default to Atom if available, otherwise RSS
+      const hasBoth = group.atom && group.rss;
+      let activeFeed = group.atom || group.rss;
+      if (!activeFeed) return;
+
       const feedItem = document.createElement('div');
       feedItem.className = 'group rounded-md border bg-card p-2 shadow-sm transition-colors hover:bg-accent';
 
-      const subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(feed.url)}`;
+      let subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(activeFeed.url)}`;
+
+      // Build toggle HTML if both formats available, otherwise show type badge
+      const badgeClass = "inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/20";
+
+      const formatDisplay = hasBoth ? `
+        <div class="flex items-center gap-1">
+          <span class="${badgeClass}">RSS</span>
+          <label class="feed-format-switch">
+            <input type="checkbox" class="format-toggle" checked>
+            <span class="feed-format-slider"></span>
+          </label>
+          <span class="${badgeClass}">Atom</span>
+        </div>
+      ` : `
+        <span class="${badgeClass}">${escapeHtml(activeFeed.type)}</span>
+      `;
 
       feedItem.innerHTML = `
         <div class="flex items-start gap-2">
           <div class="flex-1 min-w-0">
-            <div class="font-medium text-xs text-card-foreground mb-0.5 truncate">${escapeHtml(feed.title)}</div>
-            <div class="text-[10px] text-muted-foreground truncate">${escapeHtml(feed.url)}</div>
+            <div class="font-medium text-xs text-card-foreground mb-0.5 truncate feed-title">${escapeHtml(activeFeed.title)}</div>
+            <div class="text-[10px] text-muted-foreground truncate feed-url">${escapeHtml(activeFeed.url)}</div>
           </div>
-          <div class="flex items-center gap-1 flex-shrink-0">
-            <span class="inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/20">${escapeHtml(feed.type)}</span>
+          <div class="flex items-center gap-1 shrink-0">
+            ${formatDisplay}
             <button
               class="subscribe-btn inline-flex items-center justify-center rounded bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               data-feed-url="${escapeHtml(subscribeUrl)}"
@@ -99,6 +159,25 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
+
+      // Add toggle handler if both formats available
+      if (hasBoth && group.atom && group.rss) {
+        const toggle = feedItem.querySelector('.format-toggle') as HTMLInputElement;
+        const titleEl = feedItem.querySelector('.feed-title') as HTMLDivElement;
+        const urlEl = feedItem.querySelector('.feed-url') as HTMLDivElement;
+        const subscribeBtn = feedItem.querySelector('.subscribe-btn') as HTMLButtonElement;
+
+        if (toggle) {
+          toggle.addEventListener('change', () => {
+            activeFeed = toggle.checked ? group.atom! : group.rss!;
+            subscribeUrl = `${baseUrl}/app/subscriptions?subscribe=${encodeURIComponent(activeFeed.url)}`;
+
+            titleEl.textContent = activeFeed.title;
+            urlEl.textContent = activeFeed.url;
+            subscribeBtn.setAttribute('data-feed-url', subscribeUrl);
+          });
+        }
+      }
 
       // Add click handler for subscribe button
       const subscribeBtn = feedItem.querySelector('.subscribe-btn') as HTMLButtonElement;
@@ -111,7 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
           subscribeBtn.textContent = '✓ Opening...';
           subscribeBtn.disabled = true;
 
-          await browser.tabs.create({ url: subscribeUrl });
+          const url = subscribeBtn.getAttribute('data-feed-url') || subscribeUrl;
+          await browser.tabs.create({ url });
 
           // Reset after a moment
           setTimeout(() => {
