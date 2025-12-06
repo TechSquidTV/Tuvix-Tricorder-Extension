@@ -3,6 +3,7 @@ import type { DiscoveredFeed } from '@tuvixrss/tricorder';
 import { getBaseUrl, getConfig } from './config';
 import { createDiscoveryError, type ErrorType } from './types';
 import { ToggleSwitch } from './components/ToggleSwitch';
+import { groupFeedsByUrl, type FeedGroup } from './utils/feedGrouping';
 
 interface DiscoveryResponse {
   success: boolean;
@@ -62,42 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function hideError() {
     errorEl.classList.add('hidden');
-  }
-
-  interface FeedGroup {
-    atom?: DiscoveredFeed;
-    rss?: DiscoveredFeed;
-    normalizedUrl: string;
-  }
-
-  function groupFeedsByUrl(feeds: DiscoveredFeed[]): FeedGroup[] {
-    const feedMap = new Map<string, FeedGroup>();
-
-    feeds.forEach((feed) => {
-      // Normalize URL by removing format-specific parts
-      const normalizedUrl = feed.url
-        .toLowerCase()
-        .replace(/\/+$/, '') // Remove trailing slashes
-        .replace(/\/(atom|rss)\/?$/i, '') // Remove /atom/ or /rss/ at end
-        .replace(/\.(rss|atom|xml)$/i, '') // Remove file extensions
-        .replace(/\/(feed)\/?$/i, '/feed') // Normalize to /feed
-        .replace(/[?&](format|type)=(rss|atom)/gi, ''); // Remove format query params
-
-      let group = feedMap.get(normalizedUrl);
-      if (!group) {
-        group = { normalizedUrl };
-        feedMap.set(normalizedUrl, group);
-      }
-
-      const feedType = feed.type.toLowerCase();
-      if (feedType === 'atom') {
-        group.atom = feed;
-      } else if (feedType === 'rss') {
-        group.rss = feed;
-      }
-    });
-
-    return Array.from(feedMap.values());
   }
 
   async function renderFeeds(feeds: DiscoveredFeed[]) {
