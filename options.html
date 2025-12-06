@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuvix Tricorder Settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-w-[500px] bg-background text-foreground antialiased">
+  <!-- Header -->
+  <div class="border-b bg-card px-4 py-3">
+    <h1 class="text-lg font-semibold leading-none">Tuvix Tricorder Settings</h1>
+  </div>
+
+  <!-- Content -->
+  <div class="p-4 space-y-4 max-w-2xl">
+    <!-- Tuvix Instance URL Section -->
+    <div class="space-y-2">
+      <div>
+        <label for="baseUrl" class="block text-sm font-medium mb-1">
+          Tuvix Instance URL
+        </label>
+        <p class="text-xs text-muted-foreground mb-2">
+          Enter the URL of your Tuvix instance. Use the default cloud instance or your self-hosted installation.
+        </p>
+      </div>
+
+      <div class="space-y-2">
+        <input
+          type="url"
+          id="baseUrl"
+          placeholder="https://feed.tuvix.app"
+          class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        />
+
+        <div class="flex gap-2">
+          <button
+            id="saveBtn"
+            class="inline-flex h-8 items-center justify-center rounded-md bg-primary px-4 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          >
+            Save Settings
+          </button>
+
+          <button
+            id="resetBtn"
+            class="inline-flex h-8 items-center justify-center rounded-md bg-secondary px-4 text-xs font-medium text-secondary-foreground shadow-sm transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            Reset to Default
+          </button>
+        </div>
+      </div>
+
+      <!-- Current URL Info -->
+      <div class="rounded-md border bg-muted/50 p-3 text-xs">
+        <div class="flex justify-between">
+          <span class="text-muted-foreground">Current:</span>
+          <span id="currentUrl" class="font-mono">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Alert -->
+    <div id="successAlert" class="hidden rounded-md border border-green-500/50 bg-green-500/10 p-3 text-xs text-green-700 dark:text-green-400">
+      <div class="flex items-center gap-2">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span id="successMessage">Settings saved successfully!</span>
+      </div>
+    </div>
+
+    <!-- Error Alert -->
+    <div id="errorAlert" class="hidden rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+      <div class="flex items-start gap-2">
+        <svg class="h-4 w-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span id="errorMessage"></span>
+      </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="rounded-md border bg-card p-3 space-y-2 text-xs">
+      <h3 class="font-medium text-sm">About Self-Hosting</h3>
+      <p class="text-muted-foreground">
+        Whether you are self-hosting or using a third-party instance, enter the full Tuvix URL here (e.g., <code class="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">https://tuvix.example.com</code>).
+        The extension will use this URL when generating subscription links.
+      </p>
+      <p class="text-muted-foreground">
+        Make sure to include the protocol (https:// or http://) and exclude any trailing slashes.
+      </p>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
