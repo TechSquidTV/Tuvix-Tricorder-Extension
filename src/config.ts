@@ -2,10 +2,12 @@ import browser from 'webextension-polyfill';
 
 export interface Config {
   baseUrl: string;
+  cacheTtlDays?: number;
 }
 
 const DEFAULT_CONFIG: Config = {
-  baseUrl: 'https://feed.tuvix.app'
+  baseUrl: 'https://feed.tuvix.app',
+  cacheTtlDays: 90
 };
 
 const CONFIG_KEY = 'tuvix_config';
@@ -37,4 +39,10 @@ export async function setConfig(config: Partial<Config>): Promise<void> {
 export async function getBaseUrl(): Promise<string> {
   const config = await getConfig();
   return config.baseUrl;
+}
+
+export async function getCacheTtl(): Promise<number> {
+  const config = await getConfig();
+  const days = config.cacheTtlDays ?? 90;
+  return days * 24 * 60 * 60 * 1000; // Convert to milliseconds
 }

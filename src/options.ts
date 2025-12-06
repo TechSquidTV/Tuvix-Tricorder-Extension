@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill';
 import { getConfig, setConfig } from './config';
+import { clearCache, getCacheStats } from './cache';
 
 const DEFAULT_BASE_URL = 'https://feed.tuvix.app';
 
@@ -12,10 +13,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   const successMessage = document.getElementById('successMessage') as HTMLSpanElement;
   const errorAlert = document.getElementById('errorAlert') as HTMLDivElement;
   const errorMessage = document.getElementById('errorMessage') as HTMLSpanElement;
+  const cacheTtlSelect = document.getElementById('cacheTtl') as HTMLSelectElement;
+  const clearCacheBtn = document.getElementById('clearCacheBtn') as HTMLButtonElement;
+  const cacheStatsDiv = document.getElementById('cacheStats') as HTMLDivElement;
 
   if (!baseUrlInput || !saveBtn || !resetBtn || !currentUrlSpan || !successAlert || !errorAlert) {
     console.error('Required elements not found');
     return;
+  }
+
+  // Update cache statistics display
+  async function updateCacheStats() {
+    try {
+      const stats = await getCacheStats();
+      if (stats.totalEntries === 0) {
+        cacheStatsDiv.textContent = 'Cache is empty';
+      } else {
+        const oldestDate = stats.oldestEntry
+          ? new Date(stats.oldestEntry).toLocaleDateString()
+          : 'N/A';
+        cacheStatsDiv.textContent = `${stats.totalEntries} cached site${stats.totalEntries === 1 ? '' : 's'}. Oldest: ${oldestDate}`;
+      }
+    } catch (error) {
+      console.error('Error loading cache stats:', error);
+      cacheStatsDiv.textContent = 'Unable to load cache stats';
+    }
   }
 
   // Load current configuration
@@ -24,6 +46,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const config = await getConfig();
       baseUrlInput.value = config.baseUrl;
       currentUrlSpan.textContent = config.baseUrl;
+
+      // Load cache TTL
+      if (config.cacheTtlDays) {
+        cacheTtlSelect.value = config.cacheTtlDays.toString();
+      }
+
+      // Load cache stats
+      await updateCacheStats();
     } catch (error) {
       showError('Failed to load settings');
       console.error('Error loading config:', error);
@@ -109,14 +139,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!validation.valid) {
       showError(validation.error || 'Invalid URL');
       baseUrlInput.focus();
+      baseUrlInput.setAttribute('aria-invalid', 'true');
       return;
     }
+
+    // Reset aria-invalid on successful validation
+    baseUrlInput.setAttribute('aria-invalid', 'false');
 
     try {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
 
-      await setConfig({ baseUrl: validation.normalized! });
+      await setConfig({
+        baseUrl: validation.normalized!,
+        cacheTtlDays: parseInt(cacheTtlSelect.value, 10)
+      });
 
       // Update current URL display
       currentUrlSpan.textContent = validation.normalized!;
@@ -158,6 +195,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Event listeners
   saveBtn.addEventListener('click', saveSettings);
   resetBtn.addEventListener('click', resetToDefault);
+
+  // Clear cache button handler
+  clearCacheBtn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to clear all cached feed discoveries?')) {
+      return;
+    }
+
+    try {
+      clearCacheBtn.disabled = true;
+      clearCacheBtn.textContent = 'Clearing...';
+
+      await clearCache();
+      await updateCacheStats();
+
+      showSuccess('Cache cleared successfully');
+    } catch (error) {
+      showError('Failed to clear cache');
+      console.error('Error clearing cache:', error);
+    } finally {
+      clearCacheBtn.disabled = false;
+      clearCacheBtn.textContent = 'Clear Cache';
+    }
+  });
 
   // Save on Enter key in input
   baseUrlInput.addEventListener('keydown', (e) => {

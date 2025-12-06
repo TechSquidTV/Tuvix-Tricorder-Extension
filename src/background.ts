@@ -1,8 +1,11 @@
 import { discoverFeeds, NoFeedsFoundError, type DiscoveredFeed } from '@tuvixrss/tricorder';
 import browser from 'webextension-polyfill';
 import { getCachedFeeds, setCachedFeeds, cleanExpiredCache } from './cache';
+import { createDiscoveryError } from './types';
 
 type IconState = 'disabled' | 'enabled' | 'discovered';
+
+const DISCOVERY_TIMEOUT = 15000; // 15 seconds
 
 const ICONS: Record<IconState, Record<number, string>> = {
   disabled: {
@@ -33,6 +36,15 @@ async function setIcon(tabId: number, state: IconState): Promise<void> {
   }
 }
 
+async function discoverFeedsWithTimeout(url: string): Promise<DiscoveredFeed[]> {
+  return Promise.race([
+    discoverFeeds(url),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Discovery timeout')), DISCOVERY_TIMEOUT)
+    )
+  ]);
+}
+
 async function discoverFeedsForTab(
   tabId: number,
   url: string,
@@ -51,7 +63,7 @@ async function discoverFeedsForTab(
 
     // Not in cache or force refresh - discover feeds
     await setIcon(tabId, 'enabled');
-    const feeds = await discoverFeeds(url);
+    const feeds = await discoverFeedsWithTimeout(url);
 
     // Cache the results
     await setCachedFeeds(url, feeds);
@@ -82,10 +94,15 @@ browser.runtime.onMessage.addListener((request: any, sender: browser.Runtime.Mes
 
     return discoverFeedsForTab(tabId, request.url, forceRefresh)
       .then(({ feeds, fromCache }) => ({ success: true, feeds, fromCache }))
-      .catch((error: unknown) => ({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }));
+      .catch((error: unknown) => {
+        const discoveryError = createDiscoveryError(error);
+        return {
+          success: false,
+          error: discoveryError.message,
+          errorType: discoveryError.type,
+          suggestion: discoveryError.suggestion
+        };
+      });
   }
 
   if (request.action === 'checkCache' && request.url) {
@@ -113,7 +130,7 @@ async function handleTabNavigation(tabId: number, url: string): Promise<void> {
       await setIcon(tabId, 'enabled');
 
       try {
-        const feeds = await discoverFeeds(url);
+        const feeds = await discoverFeedsWithTimeout(url);
 
         // Cache the results
         await setCachedFeeds(url, feeds);

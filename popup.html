@@ -12,6 +12,7 @@
     <h1 class="text-sm font-semibold leading-none">Tuvix Tricorder</h1>
     <button
       id="settingsBtn"
+      aria-label="Open settings"
       class="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-accent transition-colors"
       title="Settings"
     >
@@ -25,8 +26,8 @@
   <!-- Content -->
   <div class="p-3 space-y-2">
     <!-- Status -->
-    <div class="flex items-center gap-2 text-xs text-muted-foreground">
-      <div id="statusIcon" class="flex-shrink-0 h-1.5 w-1.5 rounded-full bg-muted-foreground"></div>
+    <div class="flex items-center gap-2 text-xs text-muted-foreground" role="status" aria-live="polite" aria-atomic="true">
+      <div id="statusIcon" class="flex h-5 w-5 items-center justify-center text-sm font-medium" aria-hidden="true"></div>
       <span id="statusText">Ready to scan</span>
     </div>
 
@@ -34,12 +35,14 @@
     <div class="flex gap-2">
       <button
         id="discoverBtn"
+        aria-describedby="statusText"
         class="inline-flex h-8 flex-1 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
       >
         Discover Feeds
       </button>
       <button
         id="refreshBtn"
+        aria-label="Refresh feed discovery from source"
         class="hidden inline-flex h-8 w-8 items-center justify-center rounded-md bg-secondary text-secondary-foreground shadow-sm transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         title="Refresh from source"
       >
@@ -50,10 +53,10 @@
     </div>
 
     <!-- Feeds List -->
-    <div id="feedsList" class="space-y-1.5 max-h-[320px] overflow-y-auto"></div>
+    <div id="feedsList" role="region" aria-label="Discovered feeds" class="space-y-1.5 max-h-[320px] overflow-y-auto"></div>
 
     <!-- Error Alert -->
-    <div id="error" class="hidden rounded-md border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive"></div>
+    <div id="error" role="alert" aria-live="assertive" class="hidden rounded-md border border-destructive/50 bg-destructive/10 p-2 text-xs text-destructive"></div>
   </div>
 
   <script src="popup.js"></script>

@@ -1,6 +1,7 @@
 import browser from 'webextension-polyfill';
 import type { DiscoveredFeed } from '@tuvixrss/tricorder';
 import { getBaseUrl } from './config';
+import { createDiscoveryError, type ErrorType } from './types';
 
 interface DiscoveryResponse {
   success: boolean;
@@ -8,6 +9,8 @@ interface DiscoveryResponse {
   fromCache?: boolean;
   cached?: boolean;
   error?: string;
+  errorType?: ErrorType;
+  suggestion?: string;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -30,19 +33,32 @@ document.addEventListener('DOMContentLoaded', () => {
   function setStatus(state: 'none' | 'searching' | 'found', text: string) {
     statusIcon.classList.remove('bg-muted-foreground', 'bg-yellow-500', 'bg-green-500', 'animate-pulse-subtle');
 
+    // Add visual shape indicators (using Unicode symbols)
+    let icon = '●'; // default circle
+
     if (state === 'searching') {
       statusIcon.classList.add('bg-yellow-500', 'animate-pulse-subtle');
+      icon = '◐'; // half-filled circle for "in progress"
     } else if (state === 'found') {
       statusIcon.classList.add('bg-green-500');
+      icon = '✓'; // checkmark for success
     } else {
       statusIcon.classList.add('bg-muted-foreground');
+      icon = '○'; // empty circle for idle
     }
 
+    statusIcon.textContent = icon;
+    statusIcon.setAttribute('aria-hidden', 'true'); // Icon is decorative
     statusText.textContent = text;
   }
 
-  function showError(message: string) {
-    errorEl.textContent = message;
+  function showError(message: string, suggestion?: string) {
+    if (suggestion) {
+      // Inline format: "Error message. Suggestion here."
+      errorEl.textContent = `${message}. ${suggestion}`;
+    } else {
+      errorEl.textContent = message;
+    }
     errorEl.classList.remove('hidden');
   }
 
@@ -132,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="flex items-center gap-1">
           <span class="${badgeClass}">RSS</span>
           <label class="feed-format-switch">
-            <input type="checkbox" class="format-toggle" checked>
+            <input type="checkbox" class="format-toggle" checked aria-label="Toggle between RSS and Atom formats">
             <span class="feed-format-slider"></span>
           </label>
           <span class="${badgeClass}">Atom</span>
@@ -151,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${formatDisplay}
             <button
               class="subscribe-btn inline-flex items-center justify-center rounded bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              aria-label="Subscribe to ${escapeHtml(activeFeed.title)} feed"
               data-feed-url="${escapeHtml(subscribeUrl)}"
               title="Subscribe in Tuvix"
             >
@@ -238,7 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }) as DiscoveryResponse;
 
       if (!response.success) {
-        throw new Error(response.error || 'Discovery failed');
+        const err: any = new Error(response.error || 'Discovery failed');
+        err.error = response.error;
+        err.errorType = response.errorType;
+        err.suggestion = response.suggestion;
+        throw err;
       }
 
       const feeds = response.feeds || [];
@@ -260,7 +281,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (error) {
       setStatus('none', 'Discovery failed');
-      showError(error instanceof Error ? error.message : 'Unknown error occurred');
+
+      // Check if it's a response with error info
+      if (typeof error === 'object' && error !== null && 'error' in error) {
+        const errorResponse = error as any;
+        showError(errorResponse.error || 'Unknown error', errorResponse.suggestion);
+      } else {
+        const discoveryError = createDiscoveryError(error);
+        showError(discoveryError.message, discoveryError.suggestion);
+      }
+
       console.error('Feed discovery error:', error);
     } finally {
       discoverBtn.disabled = false;

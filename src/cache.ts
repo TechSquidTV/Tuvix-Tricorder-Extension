@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill';
 import type { DiscoveredFeed } from '@tuvixrss/tricorder';
+import { getCacheTtl } from './config';
 
 export interface CacheEntry {
   url: string;
@@ -12,7 +13,6 @@ export interface CacheStorage {
   [normalizedUrl: string]: CacheEntry;
 }
 
-const DEFAULT_TTL = 90 * 24 * 60 * 60 * 1000; // 90 days in milliseconds
 const CACHE_KEY = 'feedDiscoveryCache';
 
 /**
@@ -66,7 +66,7 @@ export async function getCachedFeeds(url: string): Promise<DiscoveredFeed[] | nu
 export async function setCachedFeeds(
   url: string,
   feeds: DiscoveredFeed[],
-  ttl: number = DEFAULT_TTL
+  ttl?: number
 ): Promise<void> {
   try {
     const normalizedUrl = normalizeUrl(url);
@@ -77,7 +77,7 @@ export async function setCachedFeeds(
       url: normalizedUrl,
       feeds,
       timestamp: Date.now(),
-      ttl
+      ttl: ttl ?? await getCacheTtl()
     };
 
     await browser.storage.local.set({ [CACHE_KEY]: cache });
