@@ -184,8 +184,4 @@ browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 });
 
 // Clean up expired cache entries on startup
-cleanExpiredCache().then((removed) => {
-  if (removed > 0) {
-    console.log(`Cleaned up ${removed} expired cache entries`);
-  }
-});
+cleanExpiredCache();
