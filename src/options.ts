@@ -5,11 +5,9 @@ const DEFAULT_BASE_URL = 'https://feed.tuvix.app';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const baseUrlInput = document.getElementById('baseUrl') as HTMLInputElement;
-  const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
   const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
   const currentUrlSpan = document.getElementById('currentUrl') as HTMLSpanElement;
-  const successAlert = document.getElementById('successAlert') as HTMLDivElement;
-  const successMessage = document.getElementById('successMessage') as HTMLSpanElement;
+  const autoSaveIndicator = document.getElementById('autoSaveIndicator') as HTMLSpanElement;
   const errorAlert = document.getElementById('errorAlert') as HTMLDivElement;
   const errorMessage = document.getElementById('errorMessage') as HTMLSpanElement;
   const subscribeActionSelect = document.getElementById('subscribeAction') as HTMLSelectElement;
@@ -20,9 +18,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const clearCacheBtn = document.getElementById('clearCacheBtn') as HTMLButtonElement;
   const cacheStatsDiv = document.getElementById('cacheStats') as HTMLDivElement;
 
-  if (!baseUrlInput || !saveBtn || !resetBtn || !currentUrlSpan || !successAlert || !errorAlert) {
+  if (!baseUrlInput || !resetBtn || !currentUrlSpan || !errorAlert) {
     console.error('Required elements not found');
     return;
+  }
+
+  let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // Show auto-save indicator temporarily
+  function showAutoSaveIndicator() {
+    autoSaveIndicator.classList.remove('opacity-0');
+    autoSaveIndicator.classList.add('opacity-100');
+
+    setTimeout(() => {
+      autoSaveIndicator.classList.remove('opacity-100');
+      autoSaveIndicator.classList.add('opacity-0');
+    }, 2000);
   }
 
   // Update subscribe action help text based on selection
@@ -131,28 +142,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Show success message
-  function showSuccess(message: string) {
-    hideError();
-    successMessage.textContent = message;
-    successAlert.classList.remove('hidden');
-
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-      successAlert.classList.add('hidden');
-    }, 3000);
-  }
-
   // Show error message
   function showError(message: string) {
-    hideSuccess();
     errorMessage.textContent = message;
     errorAlert.classList.remove('hidden');
-  }
-
-  // Hide success message
-  function hideSuccess() {
-    successAlert.classList.add('hidden');
   }
 
   // Hide error message
@@ -160,17 +153,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     errorAlert.classList.add('hidden');
   }
 
-  // Save settings
-  async function saveSettings() {
+  // Auto-save settings with debounce
+  async function autoSaveSettings() {
     hideError();
-    hideSuccess();
 
     const urlValue = baseUrlInput.value;
     const validation = validateUrl(urlValue);
 
     if (!validation.valid) {
       showError(validation.error || 'Invalid URL');
-      baseUrlInput.focus();
       baseUrlInput.setAttribute('aria-invalid', 'true');
       return;
     }
@@ -179,9 +170,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     baseUrlInput.setAttribute('aria-invalid', 'false');
 
     try {
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving...';
-
       const normalizedUrl = validation.normalized || '';
 
       await setConfig({
@@ -192,22 +180,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Update current URL display
       currentUrlSpan.textContent = normalizedUrl;
-
-      showSuccess('Settings saved successfully!');
       baseUrlInput.value = normalizedUrl;
+
+      showAutoSaveIndicator();
     } catch (error) {
       showError('Failed to save settings. Please try again.');
       console.error('Error saving config:', error);
-    } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save Settings';
     }
+  }
+
+  // Debounced auto-save for input changes
+  function debouncedAutoSave() {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    autoSaveTimeout = setTimeout(() => {
+      autoSaveSettings();
+    }, 500);
   }
 
   // Reset to default
   async function resetToDefault() {
     hideError();
-    hideSuccess();
 
     try {
       resetBtn.disabled = true;
@@ -217,7 +211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       baseUrlInput.value = DEFAULT_BASE_URL;
       currentUrlSpan.textContent = DEFAULT_BASE_URL;
 
-      showSuccess('Settings reset to default');
+      showAutoSaveIndicator();
     } catch (error) {
       showError('Failed to reset settings. Please try again.');
       console.error('Error resetting config:', error);
@@ -228,11 +222,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Event listeners
-  saveBtn.addEventListener('click', saveSettings);
   resetBtn.addEventListener('click', resetToDefault);
 
-  // Update help text when subscribe action changes
-  subscribeActionSelect.addEventListener('change', updateSubscribeActionHelp);
+  // Auto-save on input changes
+  baseUrlInput.addEventListener('input', debouncedAutoSave);
+  subscribeActionSelect.addEventListener('change', () => {
+    updateSubscribeActionHelp();
+    autoSaveSettings();
+  });
+  cacheTtlSelect.addEventListener('change', autoSaveSettings);
 
   // Clear cache button handler
   clearCacheBtn.addEventListener('click', async () => {
@@ -247,21 +245,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       await clearCache();
       await updateCacheStats();
 
-      showSuccess('Cache cleared successfully');
+      showAutoSaveIndicator();
     } catch (error) {
       showError('Failed to clear cache');
       console.error('Error clearing cache:', error);
     } finally {
       clearCacheBtn.disabled = false;
       clearCacheBtn.textContent = 'Clear Cache';
-    }
-  });
-
-  // Save on Enter key in input
-  baseUrlInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      saveSettings();
     }
   });
 
