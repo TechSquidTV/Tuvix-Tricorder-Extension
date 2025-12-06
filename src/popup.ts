@@ -274,12 +274,9 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshBtn.addEventListener('click', () => performDiscovery(true));
   }
 
-  // Settings button - opens options page (will create later)
+  // Settings button - opens options page
   settingsBtn.addEventListener('click', () => {
-    browser.runtime.openOptionsPage().catch(() => {
-      // If no options page yet, show alert with info
-      alert('Settings coming soon!\n\nDefault Tuvix URL: https://feed.tuvix.app\n\nYou will be able to configure a custom Tuvix instance URL here.');
-    });
+    browser.runtime.openOptionsPage();
   });
 
   // Keyboard shortcuts
