@@ -1,13 +1,17 @@
 import browser from 'webextension-polyfill';
 
+export type SubscribeAction = 'tuvix' | 'feed-reader' | 'raw-url';
+
 export interface Config {
   baseUrl: string;
   cacheTtlDays?: number;
+  subscribeAction?: SubscribeAction;
 }
 
 const DEFAULT_CONFIG: Config = {
   baseUrl: 'https://feed.tuvix.app',
   cacheTtlDays: 90,
+  subscribeAction: 'tuvix',
 };
 
 const CONFIG_KEY = 'tuvix_config';
