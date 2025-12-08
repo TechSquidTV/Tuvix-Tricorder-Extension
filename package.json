@@ -1,6 +1,6 @@
 {
   "name": "tuvix-tricorder-extension",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Official companion browser extension for Tuvix RSS - discover RSS and Atom feeds on any website",
   "repository": {
     "type": "git",
