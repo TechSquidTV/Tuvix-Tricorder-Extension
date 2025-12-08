@@ -4,7 +4,7 @@ The official companion browser extension for [Tuvix RSS](https://github.com/Tech
 
 Tuvix Tricorder makes RSS feed discovery effortless. While browsing any website, click the extension icon to instantly discover and access RSS/Atom feeds. Built with the [@tuvixrss/tricorder](https://www.npmjs.com/package/@tuvixrss/tricorder) library, it seamlessly integrates with the Tuvix RSS ecosystem.
 
-![Tuvix Tricorder Extension](./images/tricorder-extension-screenshot-1.webp)
+![Tuvix Tricorder Extension](./images/tuvix-tricorder-screenshot-subscribe-toggle.webp)
 
 ## About Tuvix RSS
 
