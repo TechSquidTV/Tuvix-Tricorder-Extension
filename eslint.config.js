@@ -22,6 +22,7 @@ export default [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        navigator: 'readonly',
         Promise: 'readonly',
         URL: 'readonly',
         document: 'readonly',

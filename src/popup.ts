@@ -138,12 +138,50 @@ document.addEventListener('DOMContentLoaded', () => {
       titleEl.className = 'font-medium text-xs text-card-foreground mb-0.5 truncate feed-title';
       titleEl.textContent = activeFeed.title;
 
+      const urlContainer = document.createElement('div');
+      urlContainer.className = 'flex items-center gap-1';
+
       const urlEl = document.createElement('div');
       urlEl.className = 'text-[10px] text-muted-foreground truncate feed-url';
       urlEl.textContent = activeFeed.url;
 
+      const copyBtn = document.createElement('button');
+      copyBtn.className =
+        'copy-btn shrink-0 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors';
+      copyBtn.setAttribute('aria-label', 'Copy feed URL');
+      copyBtn.title = 'Copy URL';
+      copyBtn.innerHTML = `<svg class="copy-icon w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="check-icon w-3 h-3 hidden text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+      copyBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const urlToCopy = urlEl.textContent || '';
+        await navigator.clipboard.writeText(urlToCopy);
+
+        // Show checkmark
+        const copyIcon = copyBtn.querySelector('.copy-icon');
+        const checkIcon = copyBtn.querySelector('.check-icon');
+        if (copyIcon && checkIcon) {
+          copyIcon.classList.add('hidden');
+          checkIcon.classList.remove('hidden');
+          checkIcon.classList.add('animate-fade-in');
+
+          // Reset after delay
+          setTimeout(() => {
+            checkIcon.classList.add('animate-fade-out');
+            setTimeout(() => {
+              checkIcon.classList.add('hidden');
+              checkIcon.classList.remove('animate-fade-in', 'animate-fade-out');
+              copyIcon.classList.remove('hidden');
+            }, 200);
+          }, 1500);
+        }
+      });
+
+      urlContainer.appendChild(urlEl);
+      urlContainer.appendChild(copyBtn);
+
       contentDiv.appendChild(titleEl);
-      contentDiv.appendChild(urlEl);
+      contentDiv.appendChild(urlContainer);
 
       const actionsDiv = document.createElement('div');
       actionsDiv.className = 'flex items-center gap-1 shrink-0';
