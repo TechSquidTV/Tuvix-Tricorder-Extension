@@ -1,9 +1,9 @@
-import browser from 'webextension-polyfill';
 import type { DiscoveredFeed } from '@tuvixrss/tricorder';
+import browser from 'webextension-polyfill';
 import { ToggleSwitch } from './components/ToggleSwitch';
-import { getBaseUrl, getConfig } from './config';
+import { getConfig } from './config';
 import { createDiscoveryError, type ErrorType } from './types';
-import { groupFeedsByUrl, type FeedGroup } from './utils/feedGrouping';
+import { groupFeedsByUrl } from './utils/feedGrouping';
 
 interface DiscoveryResponse {
   success: boolean;
@@ -29,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  let currentUrl: string | null = null;
   let isFromCache = false;
 
   function setStatus(state: 'none' | 'searching' | 'found', text: string) {
@@ -169,6 +168,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Add toggle or badge based on available formats
       if (hasBoth && group.atom && group.rss) {
+        const atomFeed = group.atom;
+        const rssFeed = group.rss;
         const toggleSwitch = new ToggleSwitch({
           checked: true, // Default to Atom (right side)
           ariaLabel: 'Toggle between RSS and Atom formats',
@@ -177,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
           leftLabelClass: badgeClass,
           rightLabelClass: badgeClass,
           onChange: (checked) => {
-            activeFeed = checked ? group.atom! : group.rss!;
+            activeFeed = checked ? atomFeed : rssFeed;
 
             // Update subscribe URL based on action
             if (subscribeAction === 'tuvix') {
@@ -248,8 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('Can only discover feeds on web pages');
       }
 
-      currentUrl = tab.url;
-
       const response = (await browser.runtime.sendMessage({
         action: 'discoverFeeds',
         url: tab.url,
@@ -257,11 +256,11 @@ document.addEventListener('DOMContentLoaded', () => {
       })) as DiscoveryResponse;
 
       if (!response.success) {
-        const err: any = new Error(response.error || 'Discovery failed');
-        err.error = response.error;
-        err.errorType = response.errorType;
-        err.suggestion = response.suggestion;
-        throw err;
+        throw Object.assign(new Error(response.error || 'Discovery failed'), {
+          error: response.error,
+          errorType: response.errorType,
+          suggestion: response.suggestion,
+        });
       }
 
       const feeds = response.feeds || [];
@@ -289,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Check if it's a response with error info
       if (typeof error === 'object' && error !== null && 'error' in error) {
-        const errorResponse = error as any;
+        const errorResponse = error as { error?: string; suggestion?: string };
         showError(errorResponse.error || 'Unknown error', errorResponse.suggestion);
       } else {
         const discoveryError = createDiscoveryError(error);
@@ -338,8 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (tab?.url && (tab.url.startsWith('http://') || tab.url.startsWith('https://'))) {
-        currentUrl = tab.url;
-
         // Wait a brief moment for background script to complete if it's still discovering
         await new Promise((resolve) => setTimeout(resolve, 100));
 
