@@ -107,9 +107,10 @@ document.addEventListener('DOMContentLoaded', () => {
       let activeFeed = group.atom || group.rss;
       if (!activeFeed) return;
 
-      const feedItem = document.createElement('div');
+      const feedItem = document.createElement('li');
       feedItem.className =
         'group rounded-md border bg-card p-2 shadow-sm transition-colors hover:bg-accent';
+      feedItem.setAttribute('aria-label', `${activeFeed.title} - ${activeFeed.type} feed`);
 
       // Determine subscribe URL based on action
       let subscribeUrl: string;
@@ -152,12 +153,15 @@ document.addEventListener('DOMContentLoaded', () => {
         'copy-btn shrink-0 p-0.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors';
       copyBtn.setAttribute('aria-label', 'Copy feed URL');
       copyBtn.title = 'Copy URL';
-      copyBtn.innerHTML = `<svg class="copy-icon w-3 h-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="check-icon w-3 h-3 hidden text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      copyBtn.innerHTML = `<svg class="copy-icon w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="check-icon w-3 h-3 hidden text-green-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
       copyBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const urlToCopy = urlEl.textContent || '';
         await navigator.clipboard.writeText(urlToCopy);
+
+        // Update aria-label to announce copy success
+        copyBtn.setAttribute('aria-label', 'Copied!');
 
         // Show checkmark
         const copyIcon = copyBtn.querySelector('.copy-icon');
@@ -174,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
               checkIcon.classList.add('hidden');
               checkIcon.classList.remove('animate-fade-in', 'animate-fade-out');
               copyIcon.classList.remove('hidden');
+              copyBtn.setAttribute('aria-label', 'Copy feed URL');
             }, 200);
           }, 1500);
         }
@@ -255,7 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Visual feedback
           const originalText = subscribeBtn.textContent;
+          const originalAriaLabel = subscribeBtn.getAttribute('aria-label');
           subscribeBtn.textContent = '✓ Opening...';
+          subscribeBtn.setAttribute('aria-label', 'Opening subscription page');
+          subscribeBtn.setAttribute('aria-busy', 'true');
           subscribeBtn.disabled = true;
 
           const url = subscribeBtn.getAttribute('data-feed-url') || subscribeUrl;
@@ -264,6 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // Reset after a moment
           setTimeout(() => {
             subscribeBtn.textContent = originalText;
+            subscribeBtn.setAttribute('aria-label', originalAriaLabel || '');
+            subscribeBtn.removeAttribute('aria-busy');
             subscribeBtn.disabled = false;
           }, 1000);
         });

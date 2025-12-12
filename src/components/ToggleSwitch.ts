@@ -14,14 +14,22 @@ export class ToggleSwitch {
   private leftLabelEl?: HTMLSpanElement;
   private rightLabelEl?: HTMLSpanElement;
   private changeHandler?: (checked: boolean) => void;
+  private static idCounter = 0;
 
   constructor(options: ToggleSwitchOptions = {}) {
+    const uniqueId = `toggle-${ToggleSwitch.idCounter++}`;
+
     this.container = document.createElement('div');
     this.container.className = 'toggle-switch-container flex items-center gap-1';
+    this.container.setAttribute('role', 'group');
+    if (options.ariaLabel) {
+      this.container.setAttribute('aria-label', options.ariaLabel);
+    }
 
     // Create left label if provided
     if (options.leftLabel) {
       this.leftLabelEl = document.createElement('span');
+      this.leftLabelEl.id = `${uniqueId}-left`;
       this.leftLabelEl.textContent = options.leftLabel;
       this.leftLabelEl.className = options.leftLabelClass || '';
       this.container.appendChild(this.leftLabelEl);
@@ -35,12 +43,18 @@ export class ToggleSwitch {
     this.input.type = 'checkbox';
     this.input.className = 'toggle-input';
     this.input.checked = options.checked ?? false;
+    this.input.setAttribute('role', 'switch');
+    this.input.setAttribute(
+      'aria-checked',
+      options.checked ? 'true' : 'false'
+    );
     if (options.ariaLabel) {
       this.input.setAttribute('aria-label', options.ariaLabel);
     }
 
     const slider = document.createElement('span');
     slider.className = 'toggle-slider';
+    slider.setAttribute('aria-hidden', 'true');
 
     label.appendChild(this.input);
     label.appendChild(slider);
@@ -49,17 +63,20 @@ export class ToggleSwitch {
     // Create right label if provided
     if (options.rightLabel) {
       this.rightLabelEl = document.createElement('span');
+      this.rightLabelEl.id = `${uniqueId}-right`;
       this.rightLabelEl.textContent = options.rightLabel;
       this.rightLabelEl.className = options.rightLabelClass || '';
       this.container.appendChild(this.rightLabelEl);
     }
 
     // Set up change handler
+    this.input.addEventListener('change', () => {
+      this.input.setAttribute('aria-checked', this.input.checked ? 'true' : 'false');
+      this.changeHandler?.(this.input.checked);
+    });
+
     if (options.onChange) {
       this.changeHandler = options.onChange;
-      this.input.addEventListener('change', () => {
-        this.changeHandler?.(this.input.checked);
-      });
     }
   }
 
@@ -73,6 +90,7 @@ export class ToggleSwitch {
 
   set checked(value: boolean) {
     this.input.checked = value;
+    this.input.setAttribute('aria-checked', value ? 'true' : 'false');
   }
 
   setLeftLabel(text: string, className?: string): void {
@@ -95,9 +113,6 @@ export class ToggleSwitch {
 
   onChange(handler: (checked: boolean) => void): void {
     this.changeHandler = handler;
-    this.input.addEventListener('change', () => {
-      this.changeHandler?.(this.input.checked);
-    });
   }
 
   destroy(): void {
