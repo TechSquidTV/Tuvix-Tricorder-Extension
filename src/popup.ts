@@ -304,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = (await browser.runtime.sendMessage({
         action: 'discoverFeeds',
         url: tab.url,
+        tabId: tab.id,
         forceRefresh,
       })) as DiscoveryResponse;
 

@@ -85,7 +85,8 @@ async function discoverFeedsForTab(
 
 browser.runtime.onMessage.addListener((request: any, sender: browser.Runtime.MessageSender) => {
   if (request.action === 'discoverFeeds' && request.url) {
-    const tabId = sender.tab?.id;
+    // Use tabId from request (popup), or fall back to sender.tab.id (content script)
+    const tabId = request.tabId ?? sender.tab?.id;
     if (!tabId) {
       return Promise.resolve({ success: false, error: 'No tab ID' });
     }
