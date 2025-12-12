@@ -137,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const titleEl = document.createElement('div');
       titleEl.className = 'font-medium text-xs text-card-foreground mb-0.5 truncate feed-title';
       titleEl.textContent = activeFeed.title;
+      titleEl.title = activeFeed.url;
 
       const urlContainer = document.createElement('div');
       urlContainer.className = 'flex items-center gap-1';
@@ -144,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const urlEl = document.createElement('div');
       urlEl.className = 'text-[10px] text-muted-foreground truncate feed-url';
       urlEl.textContent = activeFeed.url;
+      urlEl.title = activeFeed.url;
 
       const copyBtn = document.createElement('button');
       copyBtn.className =
@@ -230,7 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             titleEl.textContent = activeFeed.title;
+            titleEl.title = activeFeed.url;
             urlEl.textContent = activeFeed.url;
+            urlEl.title = activeFeed.url;
             subscribeBtn.setAttribute('data-feed-url', subscribeUrl);
           },
         });
