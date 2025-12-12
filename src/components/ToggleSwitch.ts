@@ -44,10 +44,7 @@ export class ToggleSwitch {
     this.input.className = 'toggle-input';
     this.input.checked = options.checked ?? false;
     this.input.setAttribute('role', 'switch');
-    this.input.setAttribute(
-      'aria-checked',
-      options.checked ? 'true' : 'false'
-    );
+    this.input.setAttribute('aria-checked', options.checked ? 'true' : 'false');
     if (options.ariaLabel) {
       this.input.setAttribute('aria-label', options.ariaLabel);
     }
