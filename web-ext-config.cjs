@@ -18,6 +18,24 @@ function findChromeBinary() {
   return undefined;
 }
 
+// Try to find Firefox binary on macOS
+function findFirefoxBinary() {
+  const possiblePaths = [
+    '/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox',
+    '/Applications/Firefox.app/Contents/MacOS/firefox',
+    '/Applications/Firefox Nightly.app/Contents/MacOS/firefox',
+    process.env.FIREFOX_PATH
+  ];
+
+  for (const firefoxPath of possiblePaths) {
+    if (firefoxPath && fs.existsSync(firefoxPath)) {
+      return firefoxPath;
+    }
+  }
+
+  return 'firefox'; // fallback to PATH lookup
+}
+
 module.exports = {
   // Source directory
   sourceDir: './dist',
@@ -37,7 +55,7 @@ module.exports = {
   // Run settings
   run: {
     // Firefox settings
-    firefox: 'firefoxdeveloperedition',
+    firefox: findFirefoxBinary(),
     browserConsole: false,
     startUrl: ['about:debugging#/runtime/this-firefox'],
 
