@@ -1,8 +1,8 @@
 import browser from 'webextension-polyfill';
 import type { DiscoveredFeed } from '@tuvixrss/tricorder';
+import { ToggleSwitch } from './components/ToggleSwitch';
 import { getBaseUrl, getConfig } from './config';
 import { createDiscoveryError, type ErrorType } from './types';
-import { ToggleSwitch } from './components/ToggleSwitch';
 import { groupFeedsByUrl, type FeedGroup } from './utils/feedGrouping';
 
 interface DiscoveryResponse {
