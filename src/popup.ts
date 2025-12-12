@@ -66,15 +66,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function renderFeeds(feeds: DiscoveredFeed[]) {
-    feedsList.innerHTML = '';
+    feedsList.replaceChildren();
 
     if (feeds.length === 0) {
-      feedsList.innerHTML = `
-        <div class="text-center py-6 space-y-1">
-          <div class="text-xs font-medium text-card-foreground">No feeds found</div>
-          <div class="text-[10px] text-muted-foreground">This page doesn't have any RSS or Atom feeds</div>
-        </div>
-      `;
+      const emptyContainer = document.createElement('div');
+      emptyContainer.className = 'text-center py-6 space-y-1';
+
+      const titleDiv = document.createElement('div');
+      titleDiv.className = 'text-xs font-medium text-card-foreground';
+      titleDiv.textContent = 'No feeds found';
+
+      const subtitleDiv = document.createElement('div');
+      subtitleDiv.className = 'text-[10px] text-muted-foreground';
+      subtitleDiv.textContent = "This page doesn't have any RSS or Atom feeds";
+
+      emptyContainer.appendChild(titleDiv);
+      emptyContainer.appendChild(subtitleDiv);
+      feedsList.appendChild(emptyContainer);
       return;
     }
 
@@ -90,9 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const helpContainer = document.createElement('div');
       helpContainer.className =
         'px-2 py-1 mb-1 text-[10px] text-muted-foreground bg-accent/30 rounded';
-      helpContainer.innerHTML = `
-        <span>Select a feed to follow.</span>
-      `;
+      helpContainer.textContent = 'Select a feed to follow.';
       feedsList.appendChild(helpContainer);
     }
 
@@ -122,30 +128,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const badgeClass =
         'inline-flex items-center rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/20';
 
-      feedItem.innerHTML = `
-        <div class="flex items-start gap-2">
-          <div class="flex-1 min-w-0">
-            <div class="font-medium text-xs text-card-foreground mb-0.5 truncate feed-title">${escapeHtml(activeFeed.title)}</div>
-            <div class="text-[10px] text-muted-foreground truncate feed-url">${escapeHtml(activeFeed.url)}</div>
-          </div>
-          <div class="flex items-center gap-1 shrink-0">
-            <div class="format-display"></div>
-            <button
-              class="subscribe-btn inline-flex items-center justify-center rounded bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              aria-label="Subscribe to ${escapeHtml(activeFeed.title)} feed"
-              data-feed-url="${escapeHtml(subscribeUrl)}"
-              title="Subscribe in Tuvix"
-            >
-              Subscribe
-            </button>
-          </div>
-        </div>
-      `;
+      // Create feed item DOM structure
+      const flexContainer = document.createElement('div');
+      flexContainer.className = 'flex items-start gap-2';
 
-      const formatDisplayEl = feedItem.querySelector('.format-display') as HTMLDivElement;
-      const titleEl = feedItem.querySelector('.feed-title') as HTMLDivElement;
-      const urlEl = feedItem.querySelector('.feed-url') as HTMLDivElement;
-      const subscribeBtn = feedItem.querySelector('.subscribe-btn') as HTMLButtonElement;
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'flex-1 min-w-0';
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'font-medium text-xs text-card-foreground mb-0.5 truncate feed-title';
+      titleEl.textContent = activeFeed.title;
+
+      const urlEl = document.createElement('div');
+      urlEl.className = 'text-[10px] text-muted-foreground truncate feed-url';
+      urlEl.textContent = activeFeed.url;
+
+      contentDiv.appendChild(titleEl);
+      contentDiv.appendChild(urlEl);
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'flex items-center gap-1 shrink-0';
+
+      const formatDisplayEl = document.createElement('div');
+      formatDisplayEl.className = 'format-display';
+
+      const subscribeBtn = document.createElement('button');
+      subscribeBtn.className =
+        'subscribe-btn inline-flex items-center justify-center rounded bg-primary px-2 py-1 text-[10px] font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring';
+      subscribeBtn.setAttribute('aria-label', `Subscribe to ${activeFeed.title} feed`);
+      subscribeBtn.setAttribute('data-feed-url', subscribeUrl);
+      subscribeBtn.title = 'Subscribe in Tuvix';
+      subscribeBtn.textContent = 'Subscribe';
+
+      actionsDiv.appendChild(formatDisplayEl);
+      actionsDiv.appendChild(subscribeBtn);
+
+      flexContainer.appendChild(contentDiv);
+      flexContainer.appendChild(actionsDiv);
+      feedItem.appendChild(flexContainer);
 
       // Add toggle or badge based on available formats
       if (hasBoth && group.atom && group.rss) {
@@ -210,18 +230,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
   async function performDiscovery(forceRefresh: boolean = false) {
     hideError();
     setStatus('searching', forceRefresh ? 'Refreshing feeds...' : 'Searching for feeds...');
     discoverBtn.disabled = true;
     if (refreshBtn) refreshBtn.disabled = true;
-    feedsList.innerHTML = '';
+    feedsList.replaceChildren();
 
     try {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
