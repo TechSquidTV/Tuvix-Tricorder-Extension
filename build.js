@@ -6,6 +6,9 @@ const tailwindcss = require('@tailwindcss/postcss');
 const sharp = require('sharp');
 
 const isWatch = process.argv.includes('--watch');
+const isFirefox = process.argv.includes('--firefox');
+const isChrome = process.argv.includes('--chrome');
+const browser = isFirefox ? 'firefox' : 'chrome';
 
 const sharedConfig = {
   bundle: true,
@@ -56,8 +59,9 @@ async function buildCSS() {
 }
 
 async function copyStaticFiles() {
+  const manifestFile = isFirefox ? 'manifest.firefox.json' : 'manifest.json';
   const filesToCopy = [
-    { from: 'manifest.json', to: 'dist/manifest.json' },
+    { from: manifestFile, to: 'dist/manifest.json' },
     { from: 'popup.html', to: 'dist/popup.html' },
     { from: 'options.html', to: 'dist/options.html' },
   ];
@@ -132,7 +136,7 @@ async function copyStaticFiles() {
     }
   }
 
-  console.log('Static files copied and icons converted');
+  console.log(`Static files copied and icons converted (${browser})`);
 }
 
 async function build() {
@@ -155,10 +159,10 @@ async function build() {
         }
       });
 
-      console.log('Watching for changes...');
+      console.log(`Watching for changes... (${browser})`);
     } else {
       await Promise.all(buildConfigs.map(config => esbuild.build(config)));
-      console.log('Build complete');
+      console.log(`Build complete (${browser})`);
     }
   } catch (error) {
     console.error('Build failed:', error);
